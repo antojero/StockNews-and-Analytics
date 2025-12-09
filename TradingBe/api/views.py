@@ -6,9 +6,27 @@ from django.views.decorators.http import require_http_methods
 import json
 from .models import Stock
 import yfinance as yf
+from rest_framework import generics, permissions, status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from .serializers import RegisterSerializer, UserSerializer
 
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+
+class RegisterView(generics.CreateAPIView):
+    serializer_class = RegisterSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+        return Response({
+            "user": UserSerializer(user, context=self.get_serializer_context()).data,
+            "message": "User created successfully",
+        })
 
 # Helper function to fetch news (not a view)
 def fetch_news_data(stock):
@@ -162,11 +180,12 @@ def predict_stock(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
-@csrf_exempt
-@require_http_methods(["GET", "POST"])
+
+@api_view(['GET', 'POST'])
+@permission_classes([IsAuthenticated])
 def stock_list(request):
     if request.method == "GET":
-        stocks = list(Stock.objects.values('id', 'ticker'))
+        stocks = list(Stock.objects.filter(user=request.user).values('id', 'ticker'))
         return JsonResponse({'stocks': stocks})
     
     if request.method == "POST":
@@ -176,19 +195,21 @@ def stock_list(request):
             if not ticker:
                 return JsonResponse({'error': 'Ticker is required'}, status=400)
             
-            stock, created = Stock.objects.get_or_create(ticker=ticker)
-            status = 201 if created else 200
+            # Use get_or_create to avoid duplicates FOR THIS USER
+            stock, created = Stock.objects.get_or_create(ticker=ticker, user=request.user)
+            status_code = 201 if created else 200
             
-            return JsonResponse({'stock': {'id': stock.id, 'ticker': stock.ticker}}, status=status)
+            return JsonResponse({'stock': {'id': stock.id, 'ticker': stock.ticker}}, status=status_code)
         except json.JSONDecodeError:
              return JsonResponse({'error': 'Invalid JSON'}, status=400)
 
-@csrf_exempt
-@require_http_methods(["DELETE"])
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated])
 def delete_stock(request, stock_id):
     try:
-        stock = Stock.objects.get(id=stock_id)
+        # Only delete if it belongs to the user
+        stock = Stock.objects.get(id=stock_id, user=request.user)
         stock.delete()
         return JsonResponse({'message': 'Stock deleted'})
     except Stock.DoesNotExist:
-        return JsonResponse({'error': 'Stock not found'}, status=404)
+        return JsonResponse({'error': 'Stock not found or permission denied'}, status=404)
