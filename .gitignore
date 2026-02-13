@@ -21,3 +21,10 @@ __pycache__/
 .env
 .venv
 env/
+
+
+# Temporary/Debug
+debug_reg.py
+
+# Binaries
+ngrok

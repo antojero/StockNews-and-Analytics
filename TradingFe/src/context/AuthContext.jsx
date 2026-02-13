@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
     const loginUser = async (username, password, rememberMe = false) => {
         try {
-            const response = await axios.post('http://localhost:8000/api/token/', {
+            const response = await axios.post('http://127.0.0.1:8000/api/token/', {
                 username,
                 password
             });
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
 
     const registerUser = async (username, email, password, confirmPassword) => {
         try {
-            await axios.post('http://localhost:8000/api/register/', {
+            await axios.post('http://127.0.0.1:8000/api/register/', {
                 username,
                 email,
                 password,

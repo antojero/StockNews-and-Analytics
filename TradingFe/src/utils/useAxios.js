@@ -6,7 +6,7 @@ const useAxios = () => {
         : (sessionStorage.getItem('authTokens') ? JSON.parse(sessionStorage.getItem('authTokens')) : null);
 
     const axiosInstance = axios.create({
-        baseURL: 'http://localhost:8000',
+        baseURL: 'http://127.0.0.1:8000',
         headers: { Authorization: `Bearer ${authTokens?.access}` }
     });
 
