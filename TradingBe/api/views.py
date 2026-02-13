@@ -14,7 +14,6 @@ from .serializers import RegisterSerializer, UserSerializer
 
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
-
 class RegisterView(generics.CreateAPIView):
     serializer_class = RegisterSerializer
     permission_classes = [permissions.AllowAny]
